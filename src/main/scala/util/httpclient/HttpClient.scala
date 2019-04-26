@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import scala.concurrent.Future
 object HttpClient {
 
-  def get(url: String): Future[Option[String]] = {
+  def get(url: String): Future[HttpResponse] = {
 
     implicit val system = ActorSystem()
     implicit val executionContext = system.dispatcher
@@ -17,12 +17,7 @@ object HttpClient {
         uri = url
       )
     )
-
-    responseFuture map { response =>
-      if (response.status.isSuccess) Some(response.entity.toString)
-      else None
-    }
-
+    responseFuture
   }
 
 }
