@@ -1,5 +1,6 @@
 
-import scala.concurrent.Future
+import scala.concurrent.{Future, Await}
+import scala.concurrent.duration._
 import scala.util.{Try, Success, Failure}
 import scala.concurrent.ExecutionContext.Implicits.global
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
@@ -10,19 +11,30 @@ object Main extends App {
 
   def printResponse(response: HttpResponse): Unit = {
     println("status: %s".format(response.status))
-    println("headers:\n%s".format(response.headers.mkString("¥n¥t")))
-    println("entity: %s".format(response.entity))
+    println("headers: %s".format(response.headers.map(s => "\n  - %s".format(s)).mkString))
     println("protocol: %s".format(response.protocol))
+    println("entity: \n%s".format(HttpClient.extractBody(response)))
   }
 
-  while(true) {
-    val url = io.StdIn.readLine
+  def isExit(s: String): Boolean = s == null || s == "" || s == "exit"
 
-    val resFuture: Future[HttpResponse] = HttpClient.get(url)
-
-    resFuture.onComplete {
-      case Success(response) => printResponse(response)
-      case Failure(f) => println(f)
+  var continue = true
+  while(continue) {
+    print("> ")
+    io.StdIn.readLine match {
+      case x if isExit(x) => {
+        println("Bye!")
+        continue = false
+        HttpClient.terminate()
+      }
+      case url => {
+        val resFuture: Future[HttpResponse] = HttpClient.get(url)
+        Await.ready(resFuture, Duration.Inf)
+        resFuture.value.get match {
+          case Success(response) => printResponse(response)
+          case Failure(f) => println(f)
+        }
+      }
     }
   }
 
