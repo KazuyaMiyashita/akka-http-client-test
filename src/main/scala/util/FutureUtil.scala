@@ -8,8 +8,8 @@ object FutureUtil {
   def calcTime[T](future: => Future[T]): Future[(T, Long)] = {
     val start = System.currentTimeMillis
 
-    future map { future =>
-      (future, System.currentTimeMillis - start)
+    future map { f =>
+      (f, System.currentTimeMillis - start)
     }
   }
 
