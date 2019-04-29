@@ -18,14 +18,14 @@ object HttpClient {
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = system.dispatcher
 
-  def get(url: String): Future[HttpResponse] = {
+  def get(url: String): Future[WrappedHttpResponse] = {
 
-    val responseFuture: Future[HttpResponse] = Http().singleRequest(
-      HttpRequest(
-        uri = url
-      )
-    )
-    responseFuture.map(decodeResponse)
+    val responseFuture: Future[HttpResponse] = 
+      Http().singleRequest(HttpRequest(uri = url))
+
+    responseFuture
+      .map(decodeResponse)
+      .flatMap(wrapHttpResponse)
   }
 
   private def decodeResponse(res: HttpResponse): HttpResponse = {
@@ -39,10 +39,15 @@ object HttpClient {
     decoder.decodeMessage(res)
   }
 
-  def extractBody(res: HttpResponse): String = {
-    // val body: Future[String] = res.entity.dataBytes.runFold(ByteString.empty)(_ ++ _).map(_.utf8String)
-    val body: Future[String] = Unmarshal(res.entity).to[String]
-    Await.result(body, Duration.Inf)
+  def extractBody(res: HttpResponse): Future[String] = {
+    Unmarshal(res.entity).to[String]
+  }
+
+  def wrapHttpResponse(res: HttpResponse): Future[WrappedHttpResponse] = {
+    val future: Future[String] = extractBody(res)
+    future.map { body =>
+      WrappedHttpResponse(res, body)
+    }
   }
 
   def terminate(): Unit = {
