@@ -7,6 +7,8 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 
 import util.httpclient.{HttpClient, WrappedHttpResponse}
 
+import util.FutureUtil
+
 object Main extends App {
 
   def loop(): Unit = {
@@ -17,7 +19,7 @@ object Main extends App {
         HttpClient.terminate()
       }
       case url => {
-        val resFuture: Future[WrappedHttpResponse] = HttpClient.get(url)
+        val resFuture: Future[(WrappedHttpResponse, Long)] = FutureUtil.calcTime(HttpClient.get(url))
         Await.ready(resFuture, Duration.Inf)
         resFuture.value.get match {
           case Success(response) => println(response)
