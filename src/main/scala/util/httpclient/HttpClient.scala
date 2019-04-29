@@ -8,6 +8,8 @@ import akka.http.scaladsl.coding.{Gzip, Deflate, NoCoding}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.util.ByteString
 
+import java.net.URI
+
 import scala.concurrent.{Future, Await}
 import scala.concurrent.duration._
 import akka.stream.ActorMaterializer
@@ -19,9 +21,10 @@ object HttpClient {
   implicit val executionContext = system.dispatcher
 
   def get(url: String): Future[WrappedHttpResponse] = {
+    val encodedUri = new URI(url).toASCIIString()
 
     val responseFuture: Future[HttpResponse] = 
-      Http().singleRequest(HttpRequest(uri = url))
+      Http().singleRequest(HttpRequest(uri = encodedUri))
 
     responseFuture
       .map(decodeResponse)
